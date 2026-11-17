@@ -1,75 +1,52 @@
-# React + TypeScript + Vite
+# Sales Intelligence Web — Dashboard de Inteligência de Reuniões
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface web da plataforma SaaS de inteligência comercial para upload de gravações de reuniões, visualização de vídeos privados via Presigned URLs e acompanhamento em tempo real da análise gerada por IA (Amazon Bedrock).
 
-Currently, two official plugins are available:
+- **Aplicação em Produção:** [sales-intelligence-web-delta.vercel.app](https://sales-intelligence-web-delta.vercel.app/)
+- **Repositório Back-end:** [sales-intelligence-api](https://github.com/HeitorSouza78/sales-intelligence-api)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Funcionalidades
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Acesso Protegido (`AccessCodeGate`):** Solicita o código de acesso para obter o token JWT (`sessionStorage`) e liberar o painel.
+- **Listagem de Reuniões (`/`):** Exibe as reuniões ordenadas da mais recente para a mais antiga com status em tempo real (`PENDING`, `COMPLETED`, etc.).
+- **Upload Direto para S3:** Modal de envio de arquivos `.mp4` que solicita uma Presigned URL autenticada ao back-end NestJS e realiza o upload `PUT` diretamente no Amazon S3.
+- **Detalhes da Reunião (`/meetings/:id`):**
+  - Player de vídeo `<video>` consumindo Presigned URL temporária de leitura (expira em 1h) sem expor o bucket S3.
+  - Painel de **Compliance Score** (0–100) e categoria identificada (`DEMO`, `NEGOTIATION`, `FOLLOW_UP`, `CLOSING`).
+  - Card de **Resumo Executivo & Palavras-chave**.
+  - Lista de **Itens de Ação, Orçamentos e Prazos**.
+  - **Atualização em Tempo Real (WebSockets):** Hook `useMeetingSocket` conectado via `socket.io-client` escutando o evento `meeting.analyzed` para atualizar a interface instantaneamente sem recarregar a página.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Stack Tecnológica
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Framework:** React + TypeScript + Vite
+- **Estilização:** Tailwind CSS v4 + Lucide React
+- **Roteamento:** React Router DOM
+- **Tempo Real:** Socket.IO Client
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Variáveis de Ambiente (`.env`)
 
+```env
+VITE_API_URL="http://localhost:3000"
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Como Executar Localmente
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# 1. Instalar dependências
+npm install
 
+# 2. Rodar em desenvolvimento
+npm run dev
+
+# 3. Gerar build de produção
+npm run build
 ```
