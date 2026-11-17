@@ -6,12 +6,14 @@ import {
   ChevronRight,
   Clock,
   FileVideo,
+  LogOut,
   Plus,
   UploadCloud,
   Video,
   X,
 } from 'lucide-react';
 import {
+  clearStoredToken,
   fetchMeetings,
   type MeetingListItem,
   requestUploadUrl,
@@ -53,6 +55,15 @@ export function MeetingsListPage() {
       active = false;
     };
   }, []);
+
+  const closeModal = () => {
+    if (isUploading) return;
+    setIsModalOpen(false);
+    setTitle('');
+    setSelectedFile(null);
+    setUploadError(null);
+    setUploadStep(null);
+  };
 
   const handleUploadSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -105,17 +116,29 @@ export function MeetingsListPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setUploadError(null);
-              setIsModalOpen(true);
-            }}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
-          >
-            <Plus className="h-4 w-4" />
-            Enviar novo vídeo
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setUploadError(null);
+                setUploadStep(null);
+                setIsModalOpen(true);
+              }}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+            >
+              <Plus className="h-4 w-4" />
+              Enviar novo vídeo
+            </button>
+            <button
+              type="button"
+              onClick={clearStoredToken}
+              title="Sair / Bloquear acesso"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </button>
+          </div>
         </header>
 
         {/* Lista de Reuniões */}
@@ -203,7 +226,7 @@ export function MeetingsListPage() {
               <button
                 type="button"
                 disabled={isUploading}
-                onClick={() => setIsModalOpen(false)}
+                onClick={closeModal}
                 className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               >
                 <X className="h-5 w-5" />
@@ -281,7 +304,7 @@ export function MeetingsListPage() {
                 <button
                   type="button"
                   disabled={isUploading}
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={closeModal}
                   className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                 >
                   Cancelar

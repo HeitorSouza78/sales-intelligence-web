@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { AccessCodeGate } from './components/AccessCodeGate';
 import { MeetingDetail } from './components/MeetingDetail';
 import { MeetingsListPage } from './pages/MeetingsListPage';
+import { getStoredToken } from './services/api';
 
 function MeetingDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +14,24 @@ function MeetingDetailPage() {
 }
 
 export function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() =>
+    Boolean(getStoredToken()),
+  );
+
+  useEffect(() => {
+    const handleLock = () => setIsAuthenticated(false);
+    window.addEventListener('si:unauthorized', handleLock);
+    window.addEventListener('si:logout', handleLock);
+    return () => {
+      window.removeEventListener('si:unauthorized', handleLock);
+      window.removeEventListener('si:logout', handleLock);
+    };
+  }, []);
+
+  if (!isAuthenticated) {
+    return <AccessCodeGate onSuccess={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <BrowserRouter>
       <Routes>
