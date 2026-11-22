@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { refreshSessionToken } from '../services/api';
+import {
+  AUTH_SESSION_EXPIRED_EVENT,
+  AUTH_TOKEN_UPDATED_EVENT,
+  getAccessToken,
+} from '../services/authStorage';
 
 export type MeetingStatus =
   | 'PENDING'
@@ -47,14 +53,24 @@ export function useMeetingSocket({
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  // Mantém a referência mais recente do callback sem reiniciar a conexão do socket
   const onAnalyzedRef = useRef(onMeetingAnalyzed);
-  onAnalyzedRef.current = onMeetingAnalyzed;
+  useEffect(() => {
+    onAnalyzedRef.current = onMeetingAnalyzed;
+  }, [onMeetingAnalyzed]);
 
   useEffect(() => {
+    let activeToken = getAccessToken();
+    if (!activeToken) {
+      return;
+    }
+
+    let active = true;
     const socket: Socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
       withCredentials: true,
+      auth: (cb) => {
+        cb({ token: getAccessToken() ?? '' });
+      },
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
@@ -62,32 +78,79 @@ export function useMeetingSocket({
     });
 
     const handleConnect = () => {
+      if (!active) return;
+      activeToken = getAccessToken();
       setIsConnected(true);
       setConnectionError(null);
     };
 
-    const handleDisconnect = () => {
+    const handleDisconnect = (reason?: string) => {
+      if (!active) return;
       setIsConnected(false);
+
+      // Quando o servidor desconecta ativamente (ex.: token expirado no gateway),
+      // o Socket.IO não reconecta sozinho — renovamos o token para disparar
+      // AUTH_TOKEN_UPDATED_EVENT e restabelecer o canal.
+      if (reason === 'io server disconnect') {
+        void refreshSessionToken();
+      }
     };
 
     const handleConnectError = (err: Error) => {
+      if (!active) return;
       setIsConnected(false);
-      setConnectionError(err.message);
+
+      if (err.message.toLowerCase().includes('unauthorized')) {
+        void refreshSessionToken().then((newToken) => {
+          if (!active) return;
+          if (!newToken) {
+            setConnectionError('Sessão expirada. Faça login novamente.');
+          }
+        });
+        return;
+      }
+
+      setConnectionError('Conexão em tempo real instável. Tentando reconectar...');
     };
 
     const handleMeetingAnalyzed = (payload: MeetingAnalyzedEvent) => {
-      // Atualiza a tela apenas se o evento for da reunião aberta no momento
       if (payload.meetingId === meetingId) {
         onAnalyzedRef.current(payload);
       }
+    };
+
+    const handleTokenUpdated = () => {
+      if (!active) return;
+      const latestToken = getAccessToken();
+      if (!latestToken || latestToken === activeToken) {
+        return;
+      }
+      activeToken = latestToken;
+      socket.disconnect();
+      socket.connect();
+    };
+
+    const handleSessionExpired = () => {
+      if (!active) return;
+      activeToken = null;
+      setIsConnected(false);
+      socket.disconnect();
     };
 
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.on('connect_error', handleConnectError);
     socket.on('meeting.analyzed', handleMeetingAnalyzed);
+    window.addEventListener(AUTH_TOKEN_UPDATED_EVENT, handleTokenUpdated);
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
 
     return () => {
+      active = false;
+      window.removeEventListener(AUTH_TOKEN_UPDATED_EVENT, handleTokenUpdated);
+      window.removeEventListener(
+        AUTH_SESSION_EXPIRED_EVENT,
+        handleSessionExpired,
+      );
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
       socket.off('connect_error', handleConnectError);

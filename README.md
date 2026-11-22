@@ -9,7 +9,7 @@ Interface web da plataforma SaaS de inteligência comercial para upload de grava
 
 ## Funcionalidades
 
-- **Acesso Protegido (`AccessCodeGate`):** Solicita o código de acesso para obter o token JWT (`sessionStorage`) e liberar o painel.
+- **Autenticação Multi-Tenant & Sessão Segura:** Telas acessíveis de Login (`/login`) e Cadastro (`/register`) integradas ao back-end (`POST /auth/login`, `POST /auth/register`, `POST /auth/refresh`, `POST /auth/logout` e `GET /auth/me`), com interceptor HTTP (`Authorization: Bearer`) e trava *single-flight* para renovação de token sem derrubar a sessão em chamadas paralelas.
 - **Listagem de Reuniões (`/`):** Exibe as reuniões ordenadas da mais recente para a mais antiga com status em tempo real (`PENDING`, `COMPLETED`, etc.).
 - **Upload Direto para S3:** Modal de envio de arquivos `.mp4` que solicita uma Presigned URL autenticada ao back-end NestJS e realiza o upload `PUT` diretamente no Amazon S3.
 - **Detalhes da Reunião (`/meetings/:id`):**
