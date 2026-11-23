@@ -7,6 +7,7 @@ import {
   logoutUser,
   registerUser,
   requestUploadUrl,
+  uploadVideoToS3,
 } from './api';
 import {
   AUTH_SESSION_EXPIRED_EVENT,
@@ -266,5 +267,27 @@ describe('api client & single-flight refresh interceptor', () => {
     expect(r1).toEqual([]);
     expect(r2).toEqual([]);
     expect(refreshCount).toBe(1);
+  });
+
+  it('uploadVideoToS3 envia x-amz-meta-plan quando requiredHeaders é retornado pela API', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+    const file = new File(['mp4-bytes'], 'call.mp4', { type: 'video/mp4' });
+
+    await uploadVideoToS3('https://s3.example/presigned', file, 'video/mp4', {
+      'Content-Type': 'video/mp4',
+      'x-amz-meta-plan': 'ENTERPRISE',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://s3.example/presigned',
+      expect.objectContaining({
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'video/mp4',
+          'x-amz-meta-plan': 'ENTERPRISE',
+        },
+        body: file,
+      }),
+    );
   });
 });

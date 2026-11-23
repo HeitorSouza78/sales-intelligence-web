@@ -74,6 +74,7 @@ export interface UploadUrlResponse {
   uploadUrl: string;
   contentType: string;
   expiresInSeconds: number;
+  requiredHeaders?: Record<string, string>;
 }
 
 let refreshInFlight: Promise<string | null> | null = null;
@@ -305,10 +306,14 @@ export async function uploadVideoToS3(
   uploadUrl: string,
   file: File,
   contentType = 'video/mp4',
+  requiredHeaders?: Record<string, string>,
 ): Promise<void> {
   const res = await fetch(uploadUrl, {
     method: 'PUT',
-    headers: { 'Content-Type': contentType },
+    headers: {
+      'Content-Type': contentType,
+      ...requiredHeaders,
+    },
     body: file,
   });
   if (!res.ok) {

@@ -115,13 +115,16 @@ export function MeetingsListPage() {
     setIsUploading(true);
     try {
       setUploadStep('Gerando URL segura de upload...');
-      const { meetingId, uploadUrl, contentType } = await requestUploadUrl(
-        trimmedTitle,
-        selectedFile.size,
-      );
+      const { meetingId, uploadUrl, contentType, requiredHeaders } =
+        await requestUploadUrl(trimmedTitle, selectedFile.size);
 
       setUploadStep('Enviando vídeo diretamente para o Amazon S3...');
-      await uploadVideoToS3(uploadUrl, selectedFile, contentType);
+      await uploadVideoToS3(
+        uploadUrl,
+        selectedFile,
+        contentType,
+        requiredHeaders,
+      );
 
       setIsModalOpen(false);
       navigate(`/meetings/${meetingId}`);
